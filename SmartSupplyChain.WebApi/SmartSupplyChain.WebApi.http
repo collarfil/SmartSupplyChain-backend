@@ -1,0 +1,6 @@
+@SmartSupplyChain.WebApi_HostAddress = http://localhost:5135
+
+GET {{SmartSupplyChain.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
