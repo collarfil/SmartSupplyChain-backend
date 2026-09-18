@@ -2,132 +2,94 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
+using System.Threading.Tasks;    
 using Microsoft.EntityFrameworkCore;
-using SmartSupplyChain.Infrastructure.Repository.IRepository;
-using System.Linq.Expressions;
+using SmartSupplyChain.Core.Interface;
+using SmartSupplyChain.Core.Entities;
 using SmartSupplyChain.Infrastructure.Data;
 
-namespace SmartSupplyChain.Infrastructure.Repository
+namespace SmartSupplyChain.Infrastructure.Repository 
 {
-    public class Repository<T> : IRepository<T> where T : class
+    public class Repository<TEntity> : IRepository<TEntity> where TEntity : class
     {
-        private readonly ApplicationDbContext _context;
-        private readonly DbSet<T> _dbSet;
+        private readonly ApplicationDbContext _db;
+        internal readonly DbSet<TEntity> _dbSet;
 
-        public Repository(ApplicationDbContext context)
+        public Repository(ApplicationDbContext db)
         {
-            _context = context;
-            _dbSet = _context.Set<T>();
+            _db = db ?? throw new ArgumentNullException(nameof(db));
+            _dbSet = db.Set<TEntity>();
         }
 
-        // -------------------
-        // GET BY ID + INCLUDES
-        // -------------------
-        public async Task<T?> GetAsync(Guid id, params Expression<Func<T, object>>[] includes)
+        public async Task<TEntity?> GetByIdAsync(int id, params Expression<Func<TEntity, object>>[] includes)
         {
-            IQueryable<T> query = _dbSet;
+            if (includes != null && includes.Length > 0)
+            {
+                IQueryable<TEntity> query = _dbSet.AsNoTracking();
+                query = ApplyIncludes(query, includes);
 
-            foreach (var include in includes)
-                query = query.Include(include);
+                return await query.FirstOrDefaultAsync(e => EF.Property<int>(e, "Id") == id);
+            }
 
-            return await query.FirstOrDefaultAsync(e => EF.Property<Guid>(e, "Id") == id);
+            return await _dbSet.FindAsync(id);
         }
 
-        // -------------------
-        // GET ALL + INCLUDES
-        // -------------------
-        public async Task<IEnumerable<T>> GetAllAsync(params Expression<Func<T, object>>[] includes)
+        public async Task<IEnumerable<TEntity>> GetAllAsync(params Expression<Func<TEntity, object>>[] includes)
         {
-            IQueryable<T> query = _dbSet;
-
-            foreach (var include in includes)
-                query = query.Include(include);
+            IQueryable<TEntity> query = _dbSet.AsNoTracking();
+            query = ApplyIncludes(query, includes);
 
             return await query.ToListAsync();
         }
 
-        // -------------------
-        // ADD
-        // -------------------
-        public async Task AddAsync(T entity)
+        public async Task<IEnumerable<TEntity>> FindAsync(
+            Expression<Func<TEntity, bool>> predicate, 
+            params Expression<Func<TEntity, object>>[] includes)
+        {
+            IQueryable<TEntity> query = _dbSet.AsNoTracking().Where(predicate);
+            query = ApplyIncludes(query, includes);
+
+            return await query.ToListAsync();
+        }
+
+        public async Task AddAsync(TEntity entity)
         {
             await _dbSet.AddAsync(entity);
         }
 
-        // -------------------
-        // UPDATE
-        // -------------------
-        public void Update(T entity)
+        public async Task AddRangeAsync(IEnumerable<TEntity> entities)
+        {
+            await _dbSet.AddRangeAsync(entities);
+        }
+
+        public void Update(TEntity entity)
         {
             _dbSet.Update(entity);
         }
 
-        // -------------------
-        // REMOVE
-        // -------------------
-        public void Remove(T entity)
+        public void Remove(TEntity entity)
         {
             _dbSet.Remove(entity);
         }
 
-        public void RemoveRange(IEnumerable<T> entities)
+        public void RemoveRange(IEnumerable<TEntity> entities)
         {
             _dbSet.RemoveRange(entities);
         }
 
-        // -------------------
-        // FIND WITH INCLUDE
-        // -------------------
-        public async Task<IEnumerable<T>> FindAsync(
-            Expression<Func<T, bool>> predicate,
-            params Expression<Func<T, object>>[] includes
-        )
+        private static IQueryable<TEntity> ApplyIncludes(
+            IQueryable<TEntity> query, 
+            Expression<Func<TEntity, object>>[] includes)
         {
-            IQueryable<T> query = _dbSet.Where(predicate);
+            if (includes != null && includes.Length > 0)
+            {
+                foreach (var include in includes)
+                {
+                    query = query.Include(include);
+                }
+            }
 
-            foreach (var include in includes)
-                query = query.Include(include);
-
-            return await query.ToListAsync();
-        }
-
-        // -------------------
-        // PAGINATION + FILTER + SEARCH + SORT
-        // -------------------
-        public async Task<(IEnumerable<T> Items, int TotalCount)> GetPagedAsync(
-            int pageNumber,
-            int pageSize,
-            Expression<Func<T, bool>>? filter = null,
-            Expression<Func<T, bool>>? search = null,
-            Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null,
-            params Expression<Func<T, object>>[] includes
-        )
-        {
-            IQueryable<T> query = _dbSet;
-
-            foreach (var include in includes)
-                query = query.Include(include);
-
-            if (filter != null)
-                query = query.Where(filter);
-
-            if (search != null)
-                query = query.Where(search);
-
-            int totalCount = await query.CountAsync();
-
-            if (orderBy != null)
-                query = orderBy(query);
-
-            var items = await query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync();
-
-            return (items, totalCount);
+            return query;
         }
     }
-
 }
