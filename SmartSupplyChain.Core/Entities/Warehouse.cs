@@ -1,6 +1,8 @@
-﻿namespace SmartSupplyChain.Core.Entities
+﻿using SmartSupplyChain.Core.Common;
+
+namespace SmartSupplyChain.Core.Entities
 {
-    public class Warehouse
+    public class Warehouse:BaseAuditableEntity
     {
         public Guid Id { get; set; }
         public Guid CompanyId { get; set; }

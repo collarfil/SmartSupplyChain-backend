@@ -239,6 +239,9 @@ namespace SmartSupplyChain.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("RatePlanId")
                         .HasColumnType("uuid");
 
@@ -253,6 +256,9 @@ namespace SmartSupplyChain.Infrastructure.Migrations
 
                     b.Property<decimal>("TotalWeightKg")
                         .HasColumnType("numeric");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
 

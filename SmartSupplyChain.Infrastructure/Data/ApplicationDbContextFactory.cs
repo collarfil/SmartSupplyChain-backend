@@ -9,8 +9,8 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
     {
         var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
 
-        // Explicitly set the provider and connection string for design-time tooling
-        optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=ApprovalSystemDb;Username=collinsfelix;Password=yourpassword");
+        // Fix: Change ApprovalSystemDb to SmartSupplyChainDb
+        optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=SmartSupplyChainDb;Username=collinsfelix;Password=");
 
         return new ApplicationDbContext(optionsBuilder.Options);
     }

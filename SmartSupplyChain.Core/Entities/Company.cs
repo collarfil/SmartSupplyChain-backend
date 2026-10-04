@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using SmartSupplyChain.Core.Common;
 
 namespace SmartSupplyChain.Core.Entities
 {
-    public class Company
+    public class Company:BaseAuditableEntity
     {
         public Guid Id { get; set; }
         public string Name { get; set; }

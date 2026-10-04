@@ -2,64 +2,86 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Threading.Tasks;    
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using SmartSupplyChain.Core.Interface;
-using SmartSupplyChain.Core.Entities;
 using SmartSupplyChain.Infrastructure.Data;
 
-namespace SmartSupplyChain.Infrastructure.Repository 
+namespace SmartSupplyChain.Infrastructure.Repository
 {
     public class Repository<TEntity> : IRepository<TEntity> where TEntity : class
     {
-        private readonly ApplicationDbContext _db;
-        internal readonly DbSet<TEntity> _dbSet;
+        protected readonly ApplicationDbContext _context;
+        protected readonly DbSet<TEntity> _dbSet;
 
-        public Repository(ApplicationDbContext db)
+        public Repository(ApplicationDbContext context)
         {
-            _db = db ?? throw new ArgumentNullException(nameof(db));
-            _dbSet = db.Set<TEntity>();
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _dbSet = _context.Set<TEntity>();
         }
 
-        public async Task<TEntity?> GetByIdAsync(int id, params Expression<Func<TEntity, object>>[] includes)
+        public async Task<TEntity?> GetByIdAsync(
+            Guid id, 
+            CancellationToken cancellationToken = default, 
+            params Expression<Func<TEntity, object>>[] includes)
         {
+            IQueryable<TEntity> query = _dbSet;
+
             if (includes != null && includes.Length > 0)
             {
-                IQueryable<TEntity> query = _dbSet.AsNoTracking();
-                query = ApplyIncludes(query, includes);
-
-                return await query.FirstOrDefaultAsync(e => EF.Property<int>(e, "Id") == id);
+                foreach (var include in includes)
+                {
+                    query = query.Include(include);
+                }
             }
 
-            return await _dbSet.FindAsync(id);
+            return await query.FirstOrDefaultAsync(e => EF.Property<Guid>(e, "Id") == id, cancellationToken);
         }
 
-        public async Task<IEnumerable<TEntity>> GetAllAsync(params Expression<Func<TEntity, object>>[] includes)
+        public async Task<IEnumerable<TEntity>> GetAllAsync(
+            CancellationToken cancellationToken = default, 
+            params Expression<Func<TEntity, object>>[] includes)
         {
-            IQueryable<TEntity> query = _dbSet.AsNoTracking();
-            query = ApplyIncludes(query, includes);
+            IQueryable<TEntity> query = _dbSet;
 
-            return await query.ToListAsync();
+            if (includes != null && includes.Length > 0)
+            {
+                foreach (var include in includes)
+                {
+                    query = query.Include(include);
+                }
+            }
+
+            return await query.ToListAsync(cancellationToken);
         }
 
         public async Task<IEnumerable<TEntity>> FindAsync(
             Expression<Func<TEntity, bool>> predicate, 
+            CancellationToken cancellationToken = default, 
             params Expression<Func<TEntity, object>>[] includes)
         {
-            IQueryable<TEntity> query = _dbSet.AsNoTracking().Where(predicate);
-            query = ApplyIncludes(query, includes);
+            IQueryable<TEntity> query = _dbSet.Where(predicate);
 
-            return await query.ToListAsync();
+            if (includes != null && includes.Length > 0)
+            {
+                foreach (var include in includes)
+                {
+                    query = query.Include(include);
+                }
+            }
+
+            return await query.ToListAsync(cancellationToken);
         }
 
-        public async Task AddAsync(TEntity entity)
+        public async Task AddAsync(TEntity entity, CancellationToken cancellationToken = default)
         {
-            await _dbSet.AddAsync(entity);
+            await _dbSet.AddAsync(entity, cancellationToken);
         }
 
-        public async Task AddRangeAsync(IEnumerable<TEntity> entities)
+        public async Task AddRangeAsync(IEnumerable<TEntity> entities, CancellationToken cancellationToken = default)
         {
-            await _dbSet.AddRangeAsync(entities);
+            await _dbSet.AddRangeAsync(entities, cancellationToken);
         }
 
         public void Update(TEntity entity)
@@ -75,21 +97,6 @@ namespace SmartSupplyChain.Infrastructure.Repository
         public void RemoveRange(IEnumerable<TEntity> entities)
         {
             _dbSet.RemoveRange(entities);
-        }
-
-        private static IQueryable<TEntity> ApplyIncludes(
-            IQueryable<TEntity> query, 
-            Expression<Func<TEntity, object>>[] includes)
-        {
-            if (includes != null && includes.Length > 0)
-            {
-                foreach (var include in includes)
-                {
-                    query = query.Include(include);
-                }
-            }
-
-            return query;
         }
     }
 }

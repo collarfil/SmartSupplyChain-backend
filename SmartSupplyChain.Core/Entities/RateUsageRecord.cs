@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SmartSupplyChain.Core.Common;
 
 namespace SmartSupplyChain.Core.Entities
 {
-    public class RateUsageRecord
+    public class RateUsageRecord: BaseAuditableEntity
     {
         public Guid Id { get; set; }
         public Guid RatePlanId { get; set; }
@@ -17,7 +18,7 @@ namespace SmartSupplyChain.Core.Entities
         public decimal TotalCost { get; set; }
 
         // Navigation
-        public RatePlan RatePlan { get; set; }
-        public Shipment Shipment { get; set; }
+        public RatePlan? RatePlan { get; set; }
+        public Shipment? Shipment { get; set; }
     }
 }

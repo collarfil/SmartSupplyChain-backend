@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using SmartSupplyChain.Core.Common;
 
 namespace SmartSupplyChain.Core.Entities
 {
-    public class ShipmentItem
+    public class ShipmentItem:BaseAuditableEntity
     {
         public Guid Id { get; set; }
         public Guid ShipmentId { get; set; }

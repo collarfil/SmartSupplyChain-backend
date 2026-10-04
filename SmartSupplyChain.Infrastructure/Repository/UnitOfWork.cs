@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using SmartSupplyChain.Core.Entities;
 using SmartSupplyChain.Core.Interface;
@@ -47,9 +48,9 @@ namespace SmartSupplyChain.Infrastructure.Repository
         public IRepository<Vehicle> Vehicles { get; private set; }
         public IRepository<Warehouse> Warehouses { get; private set; }
 
-        public async Task<int> CompleteAsync()
+        public async Task<int> CompleteAsync(CancellationToken cancellationToken = default)
         {
-            return await _db.SaveChangesAsync();
+            return await _db.SaveChangesAsync(cancellationToken);
         }
 
         public async Task<bool> Commit()
